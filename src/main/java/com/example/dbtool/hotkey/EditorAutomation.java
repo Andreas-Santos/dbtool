@@ -45,17 +45,14 @@ public class EditorAutomation {
         robot.keyRelease(KeyEvent.VK_CONTROL);
         robot.keyRelease(KeyEvent.VK_ALT);
         robot.keyRelease(KeyEvent.VK_SHIFT);
-        // sleep(50);
     }
 
     public void dismissPopup() {
         tap(KeyEvent.VK_ESCAPE);
-        // sleep(30);
     }
 
     public void selectToDocumentStart() {
         pressCombo(KeyEvent.VK_CONTROL, KeyEvent.VK_SHIFT, KeyEvent.VK_HOME);
-        // sleep(80);
     }
 
     public void collapseSelectionForward() {
@@ -64,7 +61,6 @@ public class EditorAutomation {
 
     public void selectAll() {
         pressCombo(KeyEvent.VK_CONTROL, KeyEvent.VK_A);
-        // sleep(80);
     }
 
     public void moveToDocumentEnd() {
@@ -74,7 +70,6 @@ public class EditorAutomation {
 
     public void copy() {
         pressCombo(KeyEvent.VK_CONTROL, KeyEvent.VK_C);
-        // sleep(50);
     }
 
     public String readClipboard() {
@@ -103,13 +98,5 @@ public class EditorAutomation {
     private void tap(int key) {
         robot.keyPress(key);
         robot.keyRelease(key);
-    }
-
-    private void sleep(long millis) {
-        try {
-            Thread.sleep(millis);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
     }
 }
