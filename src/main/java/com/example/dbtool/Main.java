@@ -1,30 +1,77 @@
 package com.example.dbtool;
 
-import com.example.dbtool.database.MetadataService;
 import com.example.dbtool.database.MetadataServiceFactory;
-import com.example.dbtool.join.JoinGenerator;
-import com.example.dbtool.model.ForeignKey;
-
-import java.util.List;
+import com.example.dbtool.hotkey.AutocompleteController;
+import com.example.dbtool.hotkey.GlobalHotkeyListener;
+import com.example.dbtool.hotkey.GroupByController;
+import com.example.dbtool.hotkey.SyncManualRelationshipsController;
+import com.example.dbtool.hotkey.TrayIconController;
+import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
 
 /**
- * Validates the core JOIN-discovery flow from the command line, before any UI exists.
- * Usage: Main [mainTable] [relatedTable] [mainAlias] [relatedAlias]
+ * Entry point. Runs entirely in the background via a tray icon and global hotkeys —
+ * there is no window, so it never appears in the taskbar/window switcher and never
+ * steals focus from DBeaver. Ctrl+Alt+Z completes a JOIN, Ctrl+Alt+X syncs manual
+ * relationships from the editor, Ctrl+Alt+A generates a GROUP BY.
  */
 public class Main {
 
+    private final MetadataServiceFactory factory = new MetadataServiceFactory();
+    private final TrayIconController tray = new TrayIconController();
+    private final GlobalHotkeyListener hotkeyListener = new GlobalHotkeyListener();
+
+    private AutocompleteController autocompleteController;
+    private SyncManualRelationshipsController syncController;
+    private GroupByController groupByController;
+
     public static void main(String[] args) {
-        String mainTable = args.length > 0 ? args[0] : "VEN_PEDIDOVENDA";
-        String relatedTable = args.length > 1 ? args[1] : "GLO_ACAO";
-        String mainAlias = args.length > 2 ? args[2] : "PED";
-        String relatedAlias = args.length > 3 ? args[3] : "ACAO";
+        new Main().start();
+    }
 
-        MetadataService metadataService = new MetadataServiceFactory().create();
-        JoinGenerator joinGenerator = new JoinGenerator();
+    private void start() {
+        tray.install(() -> {
+            hotkeyListener.unregister();
+            System.exit(0);
+        });
 
-        List<ForeignKey> relationships = metadataService.findRelationship(mainTable, relatedTable);
-        String sql = joinGenerator.generate(relatedTable, relatedAlias, mainAlias, relationships);
+        hotkeyListener.bind(NativeKeyEvent.VC_Z, () -> runSafely(this::autocomplete));
+        hotkeyListener.bind(NativeKeyEvent.VC_X, () -> runSafely(this::syncManualRelationships));
+        hotkeyListener.bind(NativeKeyEvent.VC_A, () -> runSafely(this::groupBy));
+        hotkeyListener.start();
+    }
 
-        System.out.println(sql);
+    private void autocomplete() {
+        if (autocompleteController == null) {
+            autocompleteController = new AutocompleteController(factory.create(), tray::showInfo, tray::showError);
+        }
+        autocompleteController.onHotkeyPressed();
+    }
+
+    private void syncManualRelationships() {
+        if (syncController == null) {
+            syncController = new SyncManualRelationshipsController(
+                    factory.manualRelationships(), tray::showInfo, tray::showError);
+        }
+        syncController.onHotkeyPressed();
+    }
+
+    private void groupBy() {
+        if (groupByController == null) {
+            groupByController = new GroupByController(tray::showInfo, tray::showError);
+        }
+        groupByController.onHotkeyPressed();
+    }
+
+    /**
+     * Each hotkey trigger runs on its own background thread (see GlobalHotkeyListener) —
+     * an uncaught exception there would otherwise vanish silently instead of surfacing
+     * to the user via the tray balloon.
+     */
+    private void runSafely(Runnable action) {
+        try {
+            action.run();
+        } catch (Exception e) {
+            tray.showError(e.getMessage());
+        }
     }
 }
