@@ -12,31 +12,29 @@ import java.awt.TrayIcon;
 import java.awt.image.BufferedImage;
 
 /**
- * Keeps the app reachable while its window is hidden: a tray icon with a menu to
- * reopen the window or quit, so the user can tell the background hotkey is active.
+ * Keeps the app reachable while it has no window at all: a tray icon with a menu to
+ * quit, so the user can tell the background hotkey listener is active. Adding it to
+ * the SystemTray is also what keeps the JVM alive, since AWT's tray implementation
+ * runs on a non-daemon thread.
  */
 public class TrayIconController {
 
+    private final NotificationPopup notifications = new NotificationPopup();
     private TrayIcon trayIcon;
 
-    public void install(Runnable onShowWindow, Runnable onExit) {
+    public void install(Runnable onExit) {
         if (!SystemTray.isSupported()) {
             throw new IllegalStateException("System tray is not supported on this platform");
         }
 
         PopupMenu menu = new PopupMenu();
-        MenuItem showItem = new MenuItem("Abrir DB Tool");
-        showItem.addActionListener(e -> onShowWindow.run());
         MenuItem exitItem = new MenuItem("Sair");
         exitItem.addActionListener(e -> onExit.run());
-        menu.add(showItem);
-        menu.addSeparator();
         menu.add(exitItem);
 
         trayIcon = new TrayIcon(createIconImage(),
-                "DB Tool (Ctrl+Alt+Z completa JOIN, Ctrl+Alt+X sincroniza manual)", menu);
+                "DB Tool (Ctrl+Alt+Z completa JOIN, Ctrl+Alt+X sincroniza manual, Ctrl+Alt+A gera GROUP BY)", menu);
         trayIcon.setImageAutoSize(true);
-        trayIcon.addActionListener(e -> onShowWindow.run());
 
         try {
             SystemTray.getSystemTray().add(trayIcon);
@@ -46,15 +44,11 @@ public class TrayIconController {
     }
 
     public void showError(String message) {
-        if (trayIcon != null) {
-            trayIcon.displayMessage("DB Tool", message, TrayIcon.MessageType.ERROR);
-        }
+        notifications.showError(message);
     }
 
     public void showInfo(String message) {
-        if (trayIcon != null) {
-            trayIcon.displayMessage("DB Tool", message, TrayIcon.MessageType.INFO);
-        }
+        notifications.showInfo(message);
     }
 
     private Image createIconImage() {
