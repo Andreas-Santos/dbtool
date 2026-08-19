@@ -1,11 +1,13 @@
 package com.example.dbtool;
 
+import com.example.dbtool.config.ConfigLoader;
 import com.example.dbtool.database.MetadataServiceFactory;
 import com.example.dbtool.hotkey.AutocompleteController;
 import com.example.dbtool.hotkey.GlobalHotkeyListener;
 import com.example.dbtool.hotkey.GroupByController;
 import com.example.dbtool.hotkey.SyncManualRelationshipsController;
 import com.example.dbtool.hotkey.TrayIconController;
+import com.example.dbtool.ui.DbConfigWindow;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
 
 /**
@@ -29,7 +31,15 @@ public class Main {
     }
 
     private void start() {
-        tray.install(() -> {
+        if (new ConfigLoader().tryLoad() == null) {
+            DbConfigWindow.showOnEventThread(config -> startBackgroundServices());
+        } else {
+            startBackgroundServices();
+        }
+    }
+
+    private void startBackgroundServices() {
+        tray.install(this::openConfigWindow, () -> {
             hotkeyListener.unregister();
             System.exit(0);
         });
@@ -38,6 +48,15 @@ public class Main {
         hotkeyListener.bind(NativeKeyEvent.VC_X, () -> runSafely(this::syncManualRelationships));
         hotkeyListener.bind(NativeKeyEvent.VC_A, () -> runSafely(this::groupBy));
         hotkeyListener.start();
+    }
+
+    /**
+     * Reopening from the tray must forget the cached AutocompleteController — it's the
+     * only one holding a DB connection built from the old settings — so the next JOIN
+     * hotkey rebuilds it against whatever was just saved.
+     */
+    private void openConfigWindow() {
+        DbConfigWindow.showOnEventThread(config -> autocompleteController = null);
     }
 
     private void autocomplete() {
