@@ -15,7 +15,6 @@ import java.util.function.Consumer;
  */
 public class AutocompleteController {
 
-    private final ActiveWindowGuard windowGuard = new ActiveWindowGuard();
     private final EditorAutomation automation = new EditorAutomation();
     private final SqlJoinContextParser parser = new SqlJoinContextParser();
     private final JoinCompletionService completionService;
@@ -30,10 +29,6 @@ public class AutocompleteController {
     }
 
     public void onHotkeyPressed() {
-        if (!windowGuard.isDBeaverActive()) {
-            return;
-        }
-
         automation.releaseHotkeyModifiers();
 
         String originalClipboard = automation.readClipboard();

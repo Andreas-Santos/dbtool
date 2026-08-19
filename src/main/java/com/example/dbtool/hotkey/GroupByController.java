@@ -19,7 +19,6 @@ public class GroupByController {
 
     private static final Pattern GROUP_BY_ALREADY_TYPED_PATTERN = Pattern.compile("(?i)\\bGROUP\\s+BY\\s*$");
 
-    private final ActiveWindowGuard windowGuard = new ActiveWindowGuard();
     private final EditorAutomation automation = new EditorAutomation();
     private final SelectColumnsExtractor extractor = new SelectColumnsExtractor();
     private final GroupByGenerator generator = new GroupByGenerator();
@@ -32,10 +31,6 @@ public class GroupByController {
     }
 
     public void onHotkeyPressed() {
-        if (!windowGuard.isDBeaverActive()) {
-            return;
-        }
-
         automation.releaseHotkeyModifiers();
         // Typing "GROUP BY" typically triggers DBeaver's content-assist (e.g. suggesting
         // "ORDER BY" as the next clause). Left open, it can swallow the capture keys below

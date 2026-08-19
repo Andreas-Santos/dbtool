@@ -14,7 +14,6 @@ import java.util.function.Consumer;
  */
 public class SyncManualRelationshipsController {
 
-    private final ActiveWindowGuard windowGuard = new ActiveWindowGuard();
     private final EditorAutomation automation = new EditorAutomation();
     private final SqlJoinExtractor extractor = new SqlJoinExtractor();
     private final ManualRelationshipRepository manualRelationships;
@@ -29,10 +28,6 @@ public class SyncManualRelationshipsController {
     }
 
     public void onHotkeyPressed() {
-        if (!windowGuard.isDBeaverActive()) {
-            return;
-        }
-
         automation.releaseHotkeyModifiers();
 
         String originalClipboard = automation.readClipboard();
