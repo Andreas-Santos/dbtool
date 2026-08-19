@@ -4,6 +4,7 @@ target/
 ### DB Tool ###
 config/db.properties
 config/manual-relationships.conf
+dependency-reduced-pom.xml
 !**/src/main/**/target/
 !**/src/test/**/target/
 .kotlin
