@@ -9,11 +9,20 @@ import java.util.regex.Pattern;
 
 /**
  * Orchestrates one hotkey trigger: capture the SQL typed so far in the focused editor,
- * build a GROUP BY clause from its SELECT column list, and leave it on the clipboard
- * for the user to paste with Ctrl+V. Works the same way whether the hotkey is pressed
- * right after the last JOIN (inserts the full "GROUP BY ..." clause) or after the user
- * already typed "GROUP BY" themselves (inserts just the column list, so it doesn't
- * get duplicated).
+ * build a GROUP BY clause from its SELECT column list, and paste it directly at the
+ * cursor. The whole statement is then reformatted in place, so the query reads in house
+ * style right after the clause lands, not just the inserted snippet. The clipboard is
+ * restored to whatever it held before the hotkey fired right after pasting, so none of
+ * this lingers there. Works the same way whether the hotkey is pressed right after the
+ * last JOIN (inserts the full "GROUP BY ..." clause) or after the user already typed
+ * "GROUP BY" themselves (inserts just the column list, so it doesn't get duplicated).
+ *
+ * <p>Reformatting failures are reported without undoing the GROUP BY: by the time it
+ * runs, the clause is already in the editor, and a failed reformat (e.g. a content-assist
+ * popup disrupted the capture — typing "GROUP BY" is especially prone to triggering one)
+ * only means the query is left in its pre-paste shape, not that anything is broken —
+ * treating that the same as a real failure would blame the GROUP BY insertion for a
+ * problem that is really just cosmetic.
  */
 public class GroupByController {
 
@@ -22,6 +31,7 @@ public class GroupByController {
     private final EditorAutomation automation = new EditorAutomation();
     private final SelectColumnsExtractor extractor = new SelectColumnsExtractor();
     private final GroupByGenerator generator = new GroupByGenerator();
+    private final QueryReformatter reformatter = new QueryReformatter(automation);
     private final Consumer<String> onSuccess;
     private final Consumer<String> onError;
 
@@ -50,15 +60,35 @@ public class GroupByController {
 
             List<String> selectColumns = extractor.extract(textBeforeCursor);
             boolean groupByAlreadyTyped = GROUP_BY_ALREADY_TYPED_PATTERN.matcher(textBeforeCursor).find();
+            // When inserting the full clause (the user hasn't typed "GROUP BY" yet), the
+            // cursor sits right after the last JOIN condition with no separator — pasting
+            // "GROUP BY ..." straight there glues it onto that condition (e.g.
+            // "...CODIGOGROUP BY ..."), and the missing word boundary then makes the
+            // reformatter's clause scanner miss "GROUP BY" entirely, swallowing the whole
+            // clause into the JOIN's last condition unformatted. A leading newline keeps
+            // the keyword on its own token; harmless when columns are being appended after
+            // the user's own already-typed "GROUP BY " instead.
             String groupBy = groupByAlreadyTyped
                     ? generator.generateColumnList(selectColumns)
-                    : generator.generate(selectColumns);
+                    : "\n" + generator.generate(selectColumns);
 
             automation.writeClipboard(groupBy);
-            onSuccess.accept("GROUP BY pronto — pressione Ctrl+V");
+            automation.paste();
+            onSuccess.accept(reformatAndDescribeResult(originalClipboard));
         } catch (Exception e) {
             automation.writeClipboard(originalClipboard);
             onError.accept(describeError(e, textBeforeCursor));
+        }
+    }
+
+    private String reformatAndDescribeResult(String originalClipboard) {
+        try {
+            reformatter.reformatCurrentStatement();
+            automation.writeClipboard(originalClipboard);
+            return "GROUP BY inserido";
+        } catch (Exception reformatError) {
+            automation.writeClipboard(originalClipboard);
+            return "GROUP BY inserido (formatação não aplicada: " + reformatError.getMessage() + ")";
         }
     }
 

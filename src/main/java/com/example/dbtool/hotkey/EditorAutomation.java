@@ -47,8 +47,18 @@ public class EditorAutomation {
         robot.keyRelease(KeyEvent.VK_SHIFT);
     }
 
+    /**
+     * A popup that just appeared (e.g. content-assist right after pasting an identifier)
+     * can take a moment to actually render, so Escape fired the instant the triggering
+     * action returns sometimes arrives before there's anything open to close — the popup
+     * then shows up moments later and swallows whatever keystroke comes next. The leading
+     * delay gives it a chance to appear first; the trailing one gives the editor a moment
+     * to process the close before the next command is sent.
+     */
     public void dismissPopup() {
+        robot.delay(40);
         tap(KeyEvent.VK_ESCAPE);
+        robot.delay(30);
     }
 
     public void selectToDocumentStart() {

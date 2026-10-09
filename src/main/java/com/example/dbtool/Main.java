@@ -3,6 +3,7 @@ package com.example.dbtool;
 import com.example.dbtool.config.ConfigLoader;
 import com.example.dbtool.database.MetadataServiceFactory;
 import com.example.dbtool.hotkey.AutocompleteController;
+import com.example.dbtool.hotkey.FormatQueryController;
 import com.example.dbtool.hotkey.GlobalHotkeyListener;
 import com.example.dbtool.hotkey.GroupByController;
 import com.example.dbtool.hotkey.SyncManualRelationshipsController;
@@ -14,7 +15,8 @@ import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
  * Entry point. Runs entirely in the background via a tray icon and global hotkeys —
  * there is no window, so it never appears in the taskbar/window switcher and never
  * steals focus from DBeaver. Alt+C completes a JOIN, Alt+X syncs manual
- * relationships from the editor, Alt+G generates a GROUP BY.
+ * relationships from the editor, Alt+G generates a GROUP BY, Alt+F formats the
+ * statement the cursor is in.
  */
 public class Main {
 
@@ -25,6 +27,7 @@ public class Main {
     private AutocompleteController autocompleteController;
     private SyncManualRelationshipsController syncController;
     private GroupByController groupByController;
+    private FormatQueryController formatQueryController;
 
     public static void main(String[] args) {
         new Main().start();
@@ -47,6 +50,7 @@ public class Main {
         hotkeyListener.bind(NativeKeyEvent.VC_C, () -> runSafely(this::autocomplete));
         hotkeyListener.bind(NativeKeyEvent.VC_X, () -> runSafely(this::syncManualRelationships));
         hotkeyListener.bind(NativeKeyEvent.VC_G, () -> runSafely(this::groupBy));
+        hotkeyListener.bind(NativeKeyEvent.VC_F, () -> runSafely(this::formatQuery));
         hotkeyListener.start();
     }
 
@@ -79,6 +83,13 @@ public class Main {
             groupByController = new GroupByController(tray::showInfo, tray::showError);
         }
         groupByController.onHotkeyPressed();
+    }
+
+    private void formatQuery() {
+        if (formatQueryController == null) {
+            formatQueryController = new FormatQueryController(tray::showInfo, tray::showError);
+        }
+        formatQueryController.onHotkeyPressed();
     }
 
     /**
