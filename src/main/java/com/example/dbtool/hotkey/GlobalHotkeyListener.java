@@ -15,7 +15,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Registers system-wide Ctrl+Alt+&lt;key&gt; hotkeys via JNativeHook, so they fire even
+ * Registers system-wide Alt+&lt;key&gt; hotkeys via JNativeHook, so they fire even
  * while another application (DBeaver) has focus. Each binding runs on its own
  * single-thread executor — it drives Robot key events that must never block the
  * native hook thread — and skips a new trigger while its previous one is still
@@ -30,7 +30,7 @@ public class GlobalHotkeyListener {
     private final List<Binding> bindings = new ArrayList<>();
 
     /**
-     * Registers a Ctrl+Alt+&lt;keyCode&gt; binding (use NativeKeyEvent.VC_* constants).
+     * Registers an Alt+&lt;keyCode&gt; binding (use NativeKeyEvent.VC_* constants).
      * Call before {@link #start()}.
      */
     public void bind(int keyCode, Runnable onTrigger) {
@@ -50,7 +50,9 @@ public class GlobalHotkeyListener {
             public void nativeKeyPressed(NativeKeyEvent e) {
                 boolean ctrl = (e.getModifiers() & NativeInputEvent.CTRL_MASK) != 0;
                 boolean alt = (e.getModifiers() & NativeInputEvent.ALT_MASK) != 0;
-                if (!ctrl || !alt) {
+                // Ctrl must be absent: on ABNT2 layouts AltGr reports as Ctrl+Alt, so a
+                // plain AltGr character would otherwise fire the binding.
+                if (!alt || ctrl) {
                     return;
                 }
                 for (Binding binding : bindings) {

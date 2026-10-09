@@ -13,8 +13,8 @@ import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
 /**
  * Entry point. Runs entirely in the background via a tray icon and global hotkeys —
  * there is no window, so it never appears in the taskbar/window switcher and never
- * steals focus from DBeaver. Ctrl+Alt+Z completes a JOIN, Ctrl+Alt+X syncs manual
- * relationships from the editor, Ctrl+Alt+A generates a GROUP BY.
+ * steals focus from DBeaver. Alt+C completes a JOIN, Alt+X syncs manual
+ * relationships from the editor, Alt+G generates a GROUP BY.
  */
 public class Main {
 
@@ -44,9 +44,9 @@ public class Main {
             System.exit(0);
         });
 
-        hotkeyListener.bind(NativeKeyEvent.VC_Z, () -> runSafely(this::autocomplete));
+        hotkeyListener.bind(NativeKeyEvent.VC_C, () -> runSafely(this::autocomplete));
         hotkeyListener.bind(NativeKeyEvent.VC_X, () -> runSafely(this::syncManualRelationships));
-        hotkeyListener.bind(NativeKeyEvent.VC_A, () -> runSafely(this::groupBy));
+        hotkeyListener.bind(NativeKeyEvent.VC_G, () -> runSafely(this::groupBy));
         hotkeyListener.start();
     }
 

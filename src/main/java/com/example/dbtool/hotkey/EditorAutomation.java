@@ -36,10 +36,10 @@ public class EditorAutomation {
 
     /**
      * Forces Ctrl/Alt/Shift to a released state before any automation runs. The hotkey
-     * that triggered us IS Ctrl+Alt+<key>, and if the user hasn't physically released
-     * those keys yet, our own Ctrl+C/Ctrl+A get sent on top of a real, still-held
-     * Ctrl+Alt — some keyboard layouts (e.g. ABNT2) treat that overlap as an AltGr
-     * dead-key combo and produce a stray special character instead of a clean copy.
+     * that triggered us IS Alt+<key>, and if the user hasn't physically released Alt
+     * yet, our own Ctrl+C/Ctrl+A get sent on top of a real, still-held Alt — some
+     * keyboard layouts (e.g. ABNT2) treat that overlap as an AltGr dead-key combo and
+     * produce a stray special character instead of a clean copy.
      */
     public void releaseHotkeyModifiers() {
         robot.keyRelease(KeyEvent.VK_CONTROL);
