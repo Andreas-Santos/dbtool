@@ -13,8 +13,8 @@ import java.util.regex.Pattern;
  *     COL_A,
  *     COL_B
  * FROM
- *     TABLE_A A
- * INNER JOIN TABLE_B B ON
+ *     MEGA.TABLE_A A
+ * INNER JOIN MEGA.TABLE_B B ON
  *         A.ID     = B.A_ID
  *     AND A.FILIAL = B.FILIAL
  * WHERE
@@ -36,6 +36,10 @@ import java.util.regex.Pattern;
  * aligned to the same column by padding the shorter left-hand sides — purely cosmetic,
  * scoped independently to each block (a later JOIN's conditions never affect an earlier
  * one's alignment).
+ *
+ * <p>Every table reference in FROM and JOIN is qualified with this project's fixed
+ * schema owner ({@value #OWNER_PREFIX}), unless it already names a schema (contains a
+ * dot) or is a subquery (starts with "(") — either way it is left untouched.
  */
 public class SqlFormatter {
 
@@ -58,6 +62,11 @@ public class SqlFormatter {
     private static final Pattern ON_PATTERN = Pattern.compile("(?i)\\bON\\b");
     private static final Pattern AND_OR_PATTERN = Pattern.compile("(?i)\\b(AND|OR)\\b");
     private static final Pattern DISTINCT_PREFIX_PATTERN = Pattern.compile("(?i)\\bDISTINCT\\b\\s*");
+    private static final Pattern QUALIFIED_NAME_PATTERN = Pattern.compile(
+            "^(\"[^\"]+\"|[A-Za-z_][\\w$#]*)(\\.(\"[^\"]+\"|[A-Za-z_][\\w$#]*))?");
+
+    /** Fixed schema owner this project's tables always live under. */
+    private static final String OWNER_PREFIX = "MEGA.";
 
     private static final List<Pattern> CLAUSE_PATTERNS = List.of(
             JOIN_PATTERN, GROUP_BY_PATTERN, ORDER_BY_PATTERN, SELECT_PATTERN, FROM_PATTERN, WHERE_PATTERN, HAVING_PATTERN);
@@ -123,14 +132,33 @@ public class SqlFormatter {
 
     /**
      * SELECT/FROM style: the keyword stands alone on its own line, every item gets its
-     * own 4-space-indented line, and only the item list is comma-separated.
+     * own 4-space-indented line, and only the item list is comma-separated. Each item is
+     * a table reference, so it is qualified with the project's schema owner.
      */
     private String formatCommaBlock(String keyword, String body) {
         List<String> items = splitTopLevelCommas(body);
         if (items.isEmpty()) {
             throw new UnformattableQueryException("Nenhum item encontrado em " + keyword + ".");
         }
-        return keyword + "\n    " + String.join(",\n    ", items);
+        List<String> qualified = items.stream().map(this::qualifyTableReference).toList();
+        return keyword + "\n    " + String.join(",\n    ", qualified);
+    }
+
+    /**
+     * Prefixes {@code tableReference} with the fixed schema owner ({@link #OWNER_PREFIX}),
+     * unless it is a subquery (starts with "(") or already names a schema (an identifier
+     * followed by a dot) — either case is left untouched so the owner is never applied
+     * twice or to something that isn't a bare table name.
+     */
+    private String qualifyTableReference(String tableReference) {
+        if (tableReference.isEmpty() || tableReference.charAt(0) == '(') {
+            return tableReference;
+        }
+        Matcher matcher = QUALIFIED_NAME_PATTERN.matcher(tableReference);
+        if (!matcher.lookingAt() || matcher.group(2) != null) {
+            return tableReference;
+        }
+        return OWNER_PREFIX + tableReference;
     }
 
     /**
@@ -165,10 +193,10 @@ public class SqlFormatter {
 
         int[] onRange = findTopLevelOn(body);
         if (onRange == null) {
-            return joinHeader + " " + normalizeWhitespace(body);
+            return joinHeader + " " + qualifyTableReference(normalizeWhitespace(body));
         }
 
-        String tableAlias = normalizeWhitespace(body.substring(0, onRange[0]));
+        String tableAlias = qualifyTableReference(normalizeWhitespace(body.substring(0, onRange[0])));
         List<ConditionPart> conditions = splitConditions(body.substring(onRange[1]));
         if (conditions.isEmpty()) {
             return joinHeader + " " + tableAlias + " ON";

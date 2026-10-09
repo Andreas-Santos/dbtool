@@ -45,15 +45,15 @@ class SqlFormatterTest {
                     NOTAFISCAL.NOT_IN_NUMERO AS NOTA,
                     COUNT(OEX.PRO_IN_CODIGO) AS TOTAL_PRODUTOS
                 FROM
-                    VEN_EXPEDICAO OEX
-                INNER JOIN VEN_PEDIDOVENDA PED ON
+                    MEGA.VEN_EXPEDICAO OEX
+                INNER JOIN MEGA.VEN_PEDIDOVENDA PED ON
                         OEX.ORG_TAB_IN_CODIGO = PED.ORG_TAB_IN_CODIGO
                     AND OEX.ORG_PAD_IN_CODIGO = PED.ORG_PAD_IN_CODIGO
                     AND OEX.ORG_IN_CODIGO     = PED.ORG_IN_CODIGO
                     AND OEX.ORG_TAU_ST_CODIGO = PED.ORG_TAU_ST_CODIGO
                     AND OEX.SER_ST_CODIGO     = PED.SER_ST_CODIGO
                     AND OEX.PED_IN_CODIGO     = PED.PED_IN_CODIGO
-                INNER JOIN VEN_ITEMPEDI_VEN_ITEMNOT ITN ON
+                INNER JOIN MEGA.VEN_ITEMPEDI_VEN_ITEMNOT ITN ON
                         OEX.ORG_TAB_IN_CODIGO = ITN.NF_ORG_TAB_IN_CODIGO
                     AND OEX.ORG_PAD_IN_CODIGO = ITN.NF_ORG_PAD_IN_CODIGO
                     AND OEX.ORG_IN_CODIGO     = ITN.NF_ORG_IN_CODIGO
@@ -61,7 +61,7 @@ class SqlFormatterTest {
                     AND OEX.SEQ_TAB_IN_CODIGO = ITN.EXP_SEQ_TAB_IN_CODIGO
                     AND OEX.SEQ_IN_CODIGO     = ITN.EXP_SEQ_IN_CODIGO
                     AND OEX.EXP_IN_SEQUENCIA  = ITN.EXP_IN_SEQUENCIA
-                INNER JOIN VEN_NOTAFISCAL NOTAFISCAL ON
+                INNER JOIN MEGA.VEN_NOTAFISCAL NOTAFISCAL ON
                         ITN.NF_ORG_TAB_IN_CODIGO = NOTAFISCAL.ORG_TAB_IN_CODIGO
                     AND ITN.NF_ORG_PAD_IN_CODIGO = NOTAFISCAL.ORG_PAD_IN_CODIGO
                     AND ITN.NF_ORG_IN_CODIGO     = NOTAFISCAL.ORG_IN_CODIGO
@@ -80,7 +80,7 @@ class SqlFormatterTest {
 
     @Test
     void shouldPreserveIdentifierCaseAndOnlyNormalizeItsOwnKeywords() {
-        assertEquals("SELECT\n    a.id\nFROM\n    t a", formatter.format("select a.id from t a"));
+        assertEquals("SELECT\n    a.id\nFROM\n    MEGA.t a", formatter.format("select a.id from t a"));
     }
 
     @Test
@@ -97,7 +97,7 @@ class SqlFormatterTest {
                 SELECT
                     A.ID
                 FROM
-                    T A
+                    MEGA.T A
                 WHERE
                         A.STATUS = 1
                     AND A.ATIVO  = 'S'
@@ -116,11 +116,11 @@ class SqlFormatterTest {
                 SELECT
                     A.ID
                 FROM
-                    T A
-                INNER JOIN T2 B ON
+                    MEGA.T A
+                INNER JOIN MEGA.T2 B ON
                         A.ID     = B.A_ID
                     AND A.FILIAL = B.FILIAL
-                INNER JOIN T3 C ON
+                INNER JOIN MEGA.T3 C ON
                         A.VERYLONGCOLUMN = C.X
                     AND A.ID             = C.A_ID""";
 
@@ -135,7 +135,7 @@ class SqlFormatterTest {
                 SELECT
                     A.ID
                 FROM
-                    T A
+                    MEGA.T A
                 WHERE
                         A.ID = 1
                     AND A.QTD >= 2
@@ -152,7 +152,7 @@ class SqlFormatterTest {
                 SELECT
                     A.ID
                 FROM
-                    T A
+                    MEGA.T A
                 WHERE
                         A.VERYLONGCOLUMNNAME IS NOT NULL
                     AND A.ID = 1""";
@@ -176,8 +176,8 @@ class SqlFormatterTest {
                 SELECT
                     A.ID
                 FROM
-                    T A
-                INNER JOIN T2 B ON
+                    MEGA.T A
+                INNER JOIN MEGA.T2 B ON
                         A.ID = B.IDGROUP BY A.ID, A.NAME""", formatted);
     }
 
@@ -189,8 +189,8 @@ class SqlFormatterTest {
                 SELECT
                     A.ID
                 FROM
-                    T A
-                INNER JOIN T2 B ON
+                    MEGA.T A
+                INNER JOIN MEGA.T2 B ON
                         A.ID = B.ID
                 GROUP BY\s
                     A.ID,
@@ -207,20 +207,44 @@ class SqlFormatterTest {
                 SELECT
                     NVL(A.X, 'a, b') AS X
                 FROM
-                    T A""";
+                    MEGA.T A""";
 
         assertEquals(expected, formatter.format(sql));
     }
 
     @Test
     void shouldStripTrailingSemicolon() {
-        assertEquals("SELECT\n    A.ID\nFROM\n    T A", formatter.format("SELECT A.ID FROM T A;"));
+        assertEquals("SELECT\n    A.ID\nFROM\n    MEGA.T A", formatter.format("SELECT A.ID FROM T A;"));
     }
 
     @Test
     void shouldFormatSelectDistinct() {
-        assertEquals("SELECT DISTINCT\n    A.ID\nFROM\n    T A",
+        assertEquals("SELECT DISTINCT\n    A.ID\nFROM\n    MEGA.T A",
                 formatter.format("SELECT DISTINCT A.ID FROM T A"));
+    }
+
+    @Test
+    void shouldNotDoubleQualifyATableThatAlreadyNamesASchema() {
+        assertEquals("SELECT\n    A.ID\nFROM\n    OTHER.T A",
+                formatter.format("SELECT A.ID FROM OTHER.T A"));
+    }
+
+    @Test
+    void shouldNotQualifyASubqueryInFrom() {
+        assertEquals("SELECT\n    X.ID\nFROM\n    (SELECT A.ID FROM T A) X",
+                formatter.format("SELECT X.ID FROM (SELECT A.ID FROM T A) X"));
+    }
+
+    @Test
+    void shouldQualifyEveryTableInAnOldStyleCommaJoin() {
+        assertEquals("SELECT\n    A.ID\nFROM\n    MEGA.T A,\n    MEGA.T2 B",
+                formatter.format("SELECT A.ID FROM T A, T2 B"));
+    }
+
+    @Test
+    void shouldNotQualifyAJoinThatHasNoOnClause() {
+        assertEquals("SELECT\n    A.ID\nFROM\n    MEGA.T A\nCROSS JOIN MEGA.T2 B",
+                formatter.format("SELECT A.ID FROM T A CROSS JOIN T2 B"));
     }
 
     @Test
