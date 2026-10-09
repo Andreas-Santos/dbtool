@@ -9,7 +9,7 @@ import java.util.Properties;
 
 /**
  * Loads Oracle connection settings from environment variables (DB_HOST, DB_PORT,
- * DB_SERVICE, DB_USERNAME, DB_PASSWORD), falling back to config/db.properties.
+ * DB_SERVICE, DB_USERNAME, DB_PASSWORD, DB_OWNER), falling back to config/db.properties.
  * Credentials never live in source code — see config/db.properties.example.
  */
 public class ConfigLoader {
@@ -51,6 +51,7 @@ public class ConfigLoader {
         props.setProperty("db.service", config.service());
         props.setProperty("db.username", config.username());
         props.setProperty("db.password", config.password());
+        props.setProperty("db.owner", config.owner() == null ? "" : config.owner());
 
         try {
             Path parent = DEFAULT_CONFIG_FILE.getParent();
@@ -71,11 +72,12 @@ public class ConfigLoader {
         String service = System.getenv("DB_SERVICE");
         String username = System.getenv("DB_USERNAME");
         String password = System.getenv("DB_PASSWORD");
+        String owner = System.getenv("DB_OWNER");
 
         if (host == null || port == null || service == null || username == null || password == null) {
             return null;
         }
-        return new DbConfig(host, port, service, username, password);
+        return new DbConfig(host, port, service, username, password, owner == null ? "" : owner);
     }
 
     private DbConfig loadFromFile(Path path) {
@@ -93,7 +95,8 @@ public class ConfigLoader {
                 props.getProperty("db.port"),
                 props.getProperty("db.service"),
                 props.getProperty("db.username"),
-                props.getProperty("db.password")
+                props.getProperty("db.password"),
+                props.getProperty("db.owner", "")
         );
     }
 }

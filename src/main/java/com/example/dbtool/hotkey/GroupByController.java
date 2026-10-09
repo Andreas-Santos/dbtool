@@ -31,11 +31,12 @@ public class GroupByController {
     private final EditorAutomation automation = new EditorAutomation();
     private final SelectColumnsExtractor extractor = new SelectColumnsExtractor();
     private final GroupByGenerator generator = new GroupByGenerator();
-    private final QueryReformatter reformatter = new QueryReformatter(automation);
+    private final QueryReformatter reformatter;
     private final Consumer<String> onSuccess;
     private final Consumer<String> onError;
 
-    public GroupByController(Consumer<String> onSuccess, Consumer<String> onError) {
+    public GroupByController(String owner, Consumer<String> onSuccess, Consumer<String> onError) {
+        this.reformatter = new QueryReformatter(automation, owner);
         this.onSuccess = onSuccess;
         this.onError = onError;
     }

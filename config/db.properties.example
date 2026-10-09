@@ -3,3 +3,6 @@ db.port=1521
 db.service=ORCL
 db.username=usuario
 db.password=senha
+# Owner usado para qualificar as tabelas no FROM/JOIN ao formatar (Alt+F). Deixe em
+# branco para não qualificar as tabelas.
+db.owner=

@@ -106,8 +106,8 @@ class SqlJoinContextParserTest {
                 SELECT
                     *
                 FROM
-                    MEGA.VEN_PEDIDOVENDA PED
-                INNER JOIN MEGA.VEN_EXPEDICAO OE ON
+                    OWNER.VEN_PEDIDOVENDA PED
+                INNER JOIN OWNER.VEN_EXPEDICAO OE ON
                     PED.""";
 
         SqlJoinContext context = parser.parse(text);

@@ -1,6 +1,7 @@
 package com.example.dbtool;
 
 import com.example.dbtool.config.ConfigLoader;
+import com.example.dbtool.config.DbConfig;
 import com.example.dbtool.database.MetadataServiceFactory;
 import com.example.dbtool.hotkey.AutocompleteController;
 import com.example.dbtool.hotkey.FormatQueryController;
@@ -23,6 +24,7 @@ public class Main {
     private final MetadataServiceFactory factory = new MetadataServiceFactory();
     private final TrayIconController tray = new TrayIconController();
     private final GlobalHotkeyListener hotkeyListener = new GlobalHotkeyListener();
+    private final ConfigLoader configLoader = new ConfigLoader();
 
     private AutocompleteController autocompleteController;
     private SyncManualRelationshipsController syncController;
@@ -34,7 +36,7 @@ public class Main {
     }
 
     private void start() {
-        if (new ConfigLoader().tryLoad() == null) {
+        if (configLoader.tryLoad() == null) {
             DbConfigWindow.showOnEventThread(config -> startBackgroundServices());
         } else {
             startBackgroundServices();
@@ -55,17 +57,28 @@ public class Main {
     }
 
     /**
-     * Reopening from the tray must forget the cached AutocompleteController — it's the
-     * only one holding a DB connection built from the old settings — so the next JOIN
-     * hotkey rebuilds it against whatever was just saved.
+     * Reopening from the tray must forget every cached controller — each one bakes in
+     * either a DB connection or the owner, both built from the settings as they stood
+     * when it was first created — so the next hotkey press rebuilds whichever one it
+     * needs against whatever was just saved.
      */
     private void openConfigWindow() {
-        DbConfigWindow.showOnEventThread(config -> autocompleteController = null);
+        DbConfigWindow.showOnEventThread(config -> {
+            autocompleteController = null;
+            groupByController = null;
+            formatQueryController = null;
+        });
+    }
+
+    private String currentOwner() {
+        DbConfig config = configLoader.tryLoad();
+        return config == null ? "" : config.owner();
     }
 
     private void autocomplete() {
         if (autocompleteController == null) {
-            autocompleteController = new AutocompleteController(factory.create(), tray::showInfo, tray::showError);
+            autocompleteController = new AutocompleteController(
+                    factory.create(), currentOwner(), tray::showInfo, tray::showError);
         }
         autocompleteController.onHotkeyPressed();
     }
@@ -80,14 +93,14 @@ public class Main {
 
     private void groupBy() {
         if (groupByController == null) {
-            groupByController = new GroupByController(tray::showInfo, tray::showError);
+            groupByController = new GroupByController(currentOwner(), tray::showInfo, tray::showError);
         }
         groupByController.onHotkeyPressed();
     }
 
     private void formatQuery() {
         if (formatQueryController == null) {
-            formatQueryController = new FormatQueryController(tray::showInfo, tray::showError);
+            formatQueryController = new FormatQueryController(currentOwner(), tray::showInfo, tray::showError);
         }
         formatQueryController.onHotkeyPressed();
     }

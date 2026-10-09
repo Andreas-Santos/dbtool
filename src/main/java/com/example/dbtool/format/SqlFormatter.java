@@ -13,8 +13,8 @@ import java.util.regex.Pattern;
  *     COL_A,
  *     COL_B
  * FROM
- *     MEGA.TABLE_A A
- * INNER JOIN MEGA.TABLE_B B ON
+ *     OWNER.TABLE_A A
+ * INNER JOIN OWNER.TABLE_B B ON
  *         A.ID     = B.A_ID
  *     AND A.FILIAL = B.FILIAL
  * WHERE
@@ -37,9 +37,11 @@ import java.util.regex.Pattern;
  * scoped independently to each block (a later JOIN's conditions never affect an earlier
  * one's alignment).
  *
- * <p>Every table reference in FROM and JOIN is qualified with this project's fixed
- * schema owner ({@value #OWNER_PREFIX}), unless it already names a schema (contains a
- * dot) or is a subquery (starts with "(") — either way it is left untouched.
+ * <p>Every table reference in FROM and JOIN is qualified with the schema owner
+ * configured for this connection (see {@link com.example.dbtool.config.DbConfig#owner()}),
+ * unless it already names a schema (contains a dot) or is a subquery (starts with "(")
+ * — either way it is left untouched. An owner left blank in the configuration disables
+ * this qualification entirely, leaving every table reference as typed.
  */
 public class SqlFormatter {
 
@@ -65,14 +67,22 @@ public class SqlFormatter {
     private static final Pattern QUALIFIED_NAME_PATTERN = Pattern.compile(
             "^(\"[^\"]+\"|[A-Za-z_][\\w$#]*)(\\.(\"[^\"]+\"|[A-Za-z_][\\w$#]*))?");
 
-    /** Fixed schema owner this project's tables always live under. */
-    private static final String OWNER_PREFIX = "MEGA.";
-
     private static final List<Pattern> CLAUSE_PATTERNS = List.of(
             JOIN_PATTERN, GROUP_BY_PATTERN, ORDER_BY_PATTERN, SELECT_PATTERN, FROM_PATTERN, WHERE_PATTERN, HAVING_PATTERN);
     private static final List<ClauseType> CLAUSE_TYPES = List.of(
             ClauseType.JOIN, ClauseType.GROUP_BY, ClauseType.ORDER_BY, ClauseType.SELECT, ClauseType.FROM,
             ClauseType.WHERE, ClauseType.HAVING);
+
+    /** "" when no owner is configured, so table references are left unqualified. */
+    private final String ownerPrefix;
+
+    /**
+     * @param owner the schema owner to qualify every FROM/JOIN table with, or blank/null
+     *              to leave table references unqualified.
+     */
+    public SqlFormatter(String owner) {
+        this.ownerPrefix = (owner == null || owner.isBlank()) ? "" : owner.strip() + ".";
+    }
 
     public String format(String sql) {
         if (sql == null || sql.isBlank()) {
@@ -145,20 +155,20 @@ public class SqlFormatter {
     }
 
     /**
-     * Prefixes {@code tableReference} with the fixed schema owner ({@link #OWNER_PREFIX}),
-     * unless it is a subquery (starts with "(") or already names a schema (an identifier
-     * followed by a dot) — either case is left untouched so the owner is never applied
-     * twice or to something that isn't a bare table name.
+     * Prefixes {@code tableReference} with the configured schema owner, unless no owner
+     * is configured, it is a subquery (starts with "("), or it already names a schema
+     * (an identifier followed by a dot) — any of those is left untouched so the owner is
+     * never applied twice or to something that isn't a bare table name.
      */
     private String qualifyTableReference(String tableReference) {
-        if (tableReference.isEmpty() || tableReference.charAt(0) == '(') {
+        if (ownerPrefix.isEmpty() || tableReference.isEmpty() || tableReference.charAt(0) == '(') {
             return tableReference;
         }
         Matcher matcher = QUALIFIED_NAME_PATTERN.matcher(tableReference);
         if (!matcher.lookingAt() || matcher.group(2) != null) {
             return tableReference;
         }
-        return OWNER_PREFIX + tableReference;
+        return ownerPrefix + tableReference;
     }
 
     /**

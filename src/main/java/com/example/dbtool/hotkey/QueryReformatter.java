@@ -27,10 +27,11 @@ import com.example.dbtool.format.StatementBounds;
 public class QueryReformatter {
 
     private final EditorAutomation automation;
-    private final SqlFormatter formatter = new SqlFormatter();
+    private final SqlFormatter formatter;
 
-    public QueryReformatter(EditorAutomation automation) {
+    public QueryReformatter(EditorAutomation automation, String owner) {
         this.automation = automation;
+        this.formatter = new SqlFormatter(owner);
     }
 
     public void reformatCurrentStatement() {

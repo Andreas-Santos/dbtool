@@ -12,11 +12,12 @@ import java.util.function.Consumer;
 public class FormatQueryController {
 
     private final EditorAutomation automation = new EditorAutomation();
-    private final QueryReformatter reformatter = new QueryReformatter(automation);
+    private final QueryReformatter reformatter;
     private final Consumer<String> onSuccess;
     private final Consumer<String> onError;
 
-    public FormatQueryController(Consumer<String> onSuccess, Consumer<String> onError) {
+    public FormatQueryController(String owner, Consumer<String> onSuccess, Consumer<String> onError) {
+        this.reformatter = new QueryReformatter(automation, owner);
         this.onSuccess = onSuccess;
         this.onError = onError;
     }

@@ -37,6 +37,7 @@ public class DbConfigWindow extends JFrame {
     private final JTextField serviceField = new JTextField();
     private final JTextField usernameField = new JTextField();
     private final JPasswordField passwordField = new JPasswordField();
+    private final JTextField ownerField = new JTextField();
     private final JLabel statusLabel = new JLabel(" ");
 
     public DbConfigWindow(Consumer<DbConfig> onSaved) {
@@ -54,6 +55,7 @@ public class DbConfigWindow extends JFrame {
             serviceField.setText(existing.service());
             usernameField.setText(existing.username());
             passwordField.setText(existing.password());
+            ownerField.setText(existing.owner());
         } else {
             portField.setText("1521");
         }
@@ -76,15 +78,16 @@ public class DbConfigWindow extends JFrame {
         addRow(form, c, 2, "Serviço/SID", serviceField);
         addRow(form, c, 3, "Usuário", usernameField);
         addRow(form, c, 4, "Senha", passwordField);
+        addRow(form, c, 5, "Owner (tabelas)", ownerField);
 
-        JTextField[] fields = {hostField, portField, serviceField, usernameField};
+        JTextField[] fields = {hostField, portField, serviceField, usernameField, ownerField};
         for (JTextField field : fields) {
             field.setColumns(20);
         }
         passwordField.setColumns(20);
 
         c.gridx = 0;
-        c.gridy = 5;
+        c.gridy = 6;
         c.gridwidth = 2;
         statusLabel.setHorizontalAlignment(SwingConstants.CENTER);
         form.add(statusLabel, c);
@@ -121,9 +124,14 @@ public class DbConfigWindow extends JFrame {
                 portField.getText().strip(),
                 serviceField.getText().strip(),
                 usernameField.getText().strip(),
-                new String(passwordField.getPassword()));
+                new String(passwordField.getPassword()),
+                ownerField.getText().strip());
     }
 
+    /**
+     * Owner is intentionally not required here — leaving it blank is a valid choice
+     * that just disables table qualification when formatting (see {@code SqlFormatter}).
+     */
     private boolean isFilledIn(DbConfig config) {
         return !config.host().isBlank() && !config.port().isBlank() && !config.service().isBlank()
                 && !config.username().isBlank() && !config.password().isBlank();

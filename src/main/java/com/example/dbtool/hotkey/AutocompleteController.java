@@ -27,13 +27,14 @@ public class AutocompleteController {
     private final EditorAutomation automation = new EditorAutomation();
     private final SqlJoinContextParser parser = new SqlJoinContextParser();
     private final JoinCompletionService completionService;
-    private final QueryReformatter reformatter = new QueryReformatter(automation);
+    private final QueryReformatter reformatter;
     private final Consumer<String> onSuccess;
     private final Consumer<String> onError;
 
-    public AutocompleteController(MetadataService metadataService, Consumer<String> onSuccess,
+    public AutocompleteController(MetadataService metadataService, String owner, Consumer<String> onSuccess,
                                    Consumer<String> onError) {
         this.completionService = new JoinCompletionService(metadataService);
+        this.reformatter = new QueryReformatter(automation, owner);
         this.onSuccess = onSuccess;
         this.onError = onError;
     }
