@@ -14,7 +14,7 @@ import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
 /**
  * Entry point. Runs entirely in the background via a tray icon and global hotkeys —
  * there is no window, so it never appears in the taskbar/window switcher and never
- * steals focus from DBeaver. Alt+C completes a JOIN, Alt+X syncs manual
+ * steals focus from DBeaver. Alt+C completes a JOIN, Alt+V syncs manual
  * relationships from the editor, Alt+G generates a GROUP BY, Alt+F formats the
  * statement the cursor is in.
  */
@@ -48,7 +48,7 @@ public class Main {
         });
 
         hotkeyListener.bind(NativeKeyEvent.VC_C, () -> runSafely(this::autocomplete));
-        hotkeyListener.bind(NativeKeyEvent.VC_X, () -> runSafely(this::syncManualRelationships));
+        hotkeyListener.bind(NativeKeyEvent.VC_V, () -> runSafely(this::syncManualRelationships));
         hotkeyListener.bind(NativeKeyEvent.VC_G, () -> runSafely(this::groupBy));
         hotkeyListener.bind(NativeKeyEvent.VC_F, () -> runSafely(this::formatQuery));
         hotkeyListener.start();

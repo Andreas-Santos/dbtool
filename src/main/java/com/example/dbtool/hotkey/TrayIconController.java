@@ -34,7 +34,7 @@ public class TrayIconController {
         menu.add(exitItem);
 
         trayIcon = new TrayIcon(AppIcon.load(),
-                "DB Tool (Alt+C completa JOIN, Alt+X sincroniza manual, Alt+G gera GROUP BY)", menu);
+                "DB Tool (Alt+C completa JOIN, Alt+V sincroniza manual, Alt+G gera GROUP BY)", menu);
         trayIcon.setImageAutoSize(true);
 
         try {
