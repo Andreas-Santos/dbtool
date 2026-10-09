@@ -101,6 +101,24 @@ class SqlJoinContextParserTest {
     }
 
     @Test
+    void shouldParseWhenTablesAreQualifiedWithAnOwner() {
+        String text = """
+                SELECT
+                    *
+                FROM
+                    MEGA.VEN_PEDIDOVENDA PED
+                INNER JOIN MEGA.VEN_EXPEDICAO OE ON
+                    PED.""";
+
+        SqlJoinContext context = parser.parse(text);
+
+        assertEquals("VEN_PEDIDOVENDA", context.sourceTable());
+        assertEquals("PED", context.sourceAlias());
+        assertEquals("VEN_EXPEDICAO", context.joinedTable());
+        assertEquals("OE", context.joinedAlias());
+    }
+
+    @Test
     void shouldThrowWhenFromIsMissing() {
         assertThrows(NoJoinContextFoundException.class,
                 () -> parser.parse("SELECT * JOIN VEN_EXPEDICAO OE ON PED."));

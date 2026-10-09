@@ -17,9 +17,9 @@ import java.util.regex.Pattern;
 public class SqlJoinContextParser {
 
     private static final Pattern FROM_PATTERN =
-            Pattern.compile("(?i)\\bFROM\\s+([A-Za-z0-9_$#]+)\\s+([A-Za-z0-9_$#]+)");
+            Pattern.compile("(?i)\\bFROM\\s+(?:[A-Za-z0-9_$#]+\\.)?([A-Za-z0-9_$#]+)\\s+([A-Za-z0-9_$#]+)");
     private static final Pattern JOIN_ON_PATTERN =
-            Pattern.compile("(?i)\\bJOIN\\s+([A-Za-z0-9_$#]+)\\s+([A-Za-z0-9_$#]+)\\s+ON\\b");
+            Pattern.compile("(?i)\\bJOIN\\s+(?:[A-Za-z0-9_$#]+\\.)?([A-Za-z0-9_$#]+)\\s+([A-Za-z0-9_$#]+)\\s+ON\\b");
     private static final Pattern TYPED_ALIAS_PATTERN =
             Pattern.compile("^([A-Za-z0-9_$#]+)\\.$");
 
