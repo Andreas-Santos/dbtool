@@ -72,6 +72,22 @@ public class EditorAutomation {
         pressCombo(KeyEvent.VK_CONTROL, KeyEvent.VK_C);
     }
 
+    /**
+     * A short delay before the keystroke gives the OS clipboard a moment to actually
+     * take the content we just wrote — without it, a paste fired immediately after
+     * {@link #writeClipboard} occasionally lands before the new clipboard owner is
+     * visible to the target application and pastes stale content instead. The trailing
+     * delay matters just as much: {@code Robot} returns as soon as the key events are
+     * posted, not once the target application has actually read the clipboard, so a
+     * caller that restores the clipboard right after this returns can otherwise race
+     * the paste and have the editor read the restored (wrong) content instead.
+     */
+    public void paste() {
+        robot.delay(50);
+        pressCombo(KeyEvent.VK_CONTROL, KeyEvent.VK_V);
+        robot.delay(100);
+    }
+
     public String readClipboard() {
         Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
         try {

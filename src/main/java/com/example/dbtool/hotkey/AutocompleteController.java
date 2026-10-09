@@ -9,9 +9,10 @@ import java.util.function.Consumer;
 
 /**
  * Orchestrates one hotkey trigger: capture the SQL typed so far in the focused editor,
- * resolve the JOIN condition, and leave it on the clipboard for the user to paste with
- * Ctrl+V — this never simulates a paste itself, since that risked overwriting text the
- * user didn't mean to replace.
+ * resolve the JOIN condition, and paste it directly at the cursor — the selection was
+ * already collapsed back to that exact spot by {@link EditorAutomation#collapseSelectionForward()},
+ * so the paste can't land anywhere else. The clipboard is restored to whatever it held
+ * before the hotkey fired right after pasting, so the completion doesn't linger there.
  */
 public class AutocompleteController {
 
@@ -44,7 +45,9 @@ public class AutocompleteController {
             String completion = completionService.complete(context);
 
             automation.writeClipboard(completion);
-            onSuccess.accept("JOIN pronto — pressione Ctrl+V");
+            automation.paste();
+            automation.writeClipboard(originalClipboard);
+            onSuccess.accept("JOIN inserido");
         } catch (Exception e) {
             automation.writeClipboard(originalClipboard);
             onError.accept(describeError(e, textBeforeCursor));
